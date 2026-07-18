@@ -14,6 +14,7 @@ import {
   RemoveIcon,
   ToggleBackgroundActiveIcon,
   RotateIcon,
+  CropIcon,
 } from '../../icons';
 import { twoUpHandle } from './custom-els/TwoUp/styles.css';
 import type { PreprocessorState } from '../../feature-meta';
@@ -21,6 +22,11 @@ import { cleanSet } from '../../util/clean-modify';
 import type { SourceImage } from '../../Compress';
 import { linkRef } from 'shared/prerendered-app/util';
 import { drawDataToCanvas } from 'client/lazy-app/util/canvas';
+import {
+  CropEditor,
+  CropRect,
+  isFullImage,
+} from 'features/preprocessors/crop/client';
 interface Props {
   source?: SourceImage;
   preprocessorState?: PreprocessorState;
@@ -37,6 +43,7 @@ interface State {
   editingScale: boolean;
   altBackground: boolean;
   aliasing: boolean;
+  cropMode: boolean;
 }
 
 const scaleToOpts: ScaleToOpts = {
@@ -52,6 +59,7 @@ export default class Output extends Component<Props, State> {
     editingScale: false,
     altBackground: false,
     aliasing: false,
+    cropMode: false,
   };
   canvasLeft?: HTMLCanvasElement;
   canvasRight?: HTMLCanvasElement;
@@ -183,6 +191,39 @@ export default class Output extends Component<Props, State> {
     this.props.onPreprocessorChange(newState);
   };
 
+  private onCropClick = () => {
+    if (!this.props.source) return;
+    this.setState({ cropMode: true });
+  };
+
+  private onCropCancel = () => {
+    this.setState({ cropMode: false });
+  };
+
+  private onCropApply = (rect: CropRect) => {
+    this.setState({ cropMode: false });
+    const { preprocessorState, source } = this.props;
+    if (!preprocessorState || !source) return;
+
+    // A crop covering the whole image is a no-op, so disable it. This also lets
+    // "Reset → Apply" clear an existing crop.
+    const enabled = !isFullImage(
+      rect,
+      source.decoded.width,
+      source.decoded.height,
+    );
+
+    const newState = cleanSet(preprocessorState, 'crop', {
+      enabled,
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+    });
+
+    this.props.onPreprocessorChange(newState);
+  };
+
   private onScaleValueFocus = () => {
     this.setState({ editingScale: true }, () => {
       if (this.scaleInput) {
@@ -263,8 +304,14 @@ export default class Output extends Component<Props, State> {
   };
 
   render(
-    { mobileView, leftImgContain, rightImgContain, source }: Props,
-    { scale, editingScale, altBackground, aliasing }: State,
+    {
+      mobileView,
+      leftImgContain,
+      rightImgContain,
+      source,
+      preprocessorState,
+    }: Props,
+    { scale, editingScale, altBackground, aliasing, cropMode }: State,
   ) {
     const leftDraw = this.leftDrawable();
     const rightDraw = this.rightDrawable();
@@ -369,6 +416,14 @@ export default class Output extends Component<Props, State> {
             >
               <RotateIcon />
             </button>
+            <button
+              class={style.button}
+              onClick={this.onCropClick}
+              title="Crop"
+              disabled={!source}
+            >
+              <CropIcon />
+            </button>
             {!isSafari && (
               <button
                 class={style.button}
@@ -395,6 +450,18 @@ export default class Output extends Component<Props, State> {
             </button>
           </div>
         </div>
+        {cropMode && source && (
+          <CropEditor
+            image={source.decoded}
+            initialRect={
+              preprocessorState && preprocessorState.crop.enabled
+                ? preprocessorState.crop
+                : undefined
+            }
+            onApply={this.onCropApply}
+            onCancel={this.onCropCancel}
+          />
+        )}
       </Fragment>
     );
   }
