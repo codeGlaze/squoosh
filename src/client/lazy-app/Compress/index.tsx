@@ -30,6 +30,7 @@ import './custom-els/MultiPanel';
 import Results from './Results';
 import WorkerBridge from '../worker-bridge';
 import { resize } from 'features/processors/resize/client';
+import { crop } from 'features/preprocessors/crop/client';
 import type SnackBarElement from 'shared/custom-els/snack-bar';
 import { drawableToImageData } from '../util/canvas';
 
@@ -132,6 +133,12 @@ async function preprocessImage(
 ): Promise<ImageData> {
   assertSignal(signal);
   let processedData = data;
+
+  // Crop before rotate, so the crop region is defined in the coordinate space
+  // of the source image the user sees in the crop editor.
+  if (preprocessorState.crop.enabled) {
+    processedData = crop(processedData, preprocessorState.crop);
+  }
 
   if (preprocessorState.rotate.rotate !== 0) {
     processedData = await workerBridge.rotate(
