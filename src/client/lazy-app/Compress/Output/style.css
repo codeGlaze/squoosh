@@ -118,6 +118,12 @@
   border-right-width: 1px;
 }
 
+.single-button {
+  composes: button;
+  border-radius: 6px;
+  border-right-width: 1px;
+}
+
 .zoom {
   cursor: text;
   width: 7rem;

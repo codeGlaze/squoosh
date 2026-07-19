@@ -15,6 +15,7 @@ import {
   ToggleBackgroundActiveIcon,
   RotateIcon,
   CropIcon,
+  OpenImageIcon,
 } from '../../icons';
 import { twoUpHandle } from './custom-els/TwoUp/styles.css';
 import type { PreprocessorState } from '../../feature-meta';
@@ -36,6 +37,7 @@ interface Props {
   leftImgContain: boolean;
   rightImgContain: boolean;
   onPreprocessorChange: (newState: PreprocessorState) => void;
+  onNewFile: (file: File) => void;
 }
 
 interface State {
@@ -189,6 +191,20 @@ export default class Output extends Component<Props, State> {
     );
 
     this.props.onPreprocessorChange(newState);
+  };
+
+  private fileInput?: HTMLInputElement;
+
+  private onOpenClick = () => {
+    this.fileInput?.click();
+  };
+
+  private onFileChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files[0];
+    // Reset so picking the same filename again still fires a change event.
+    input.value = '';
+    if (file) this.props.onNewFile(file);
   };
 
   private onCropClick = () => {
@@ -379,6 +395,21 @@ export default class Output extends Component<Props, State> {
           </two-up>
         </div>
         <div class={style.controls}>
+          <div class={style.buttonGroup}>
+            <button
+              class={style.singleButton}
+              onClick={this.onOpenClick}
+              title="Open a different image"
+            >
+              <OpenImageIcon />
+            </button>
+            <input
+              style={{ display: 'none' }}
+              type="file"
+              ref={linkRef(this, 'fileInput')}
+              onChange={this.onFileChange}
+            />
+          </div>
           <div class={style.buttonGroup}>
             <button class={style.firstButton} onClick={this.zoomOut}>
               <RemoveIcon />

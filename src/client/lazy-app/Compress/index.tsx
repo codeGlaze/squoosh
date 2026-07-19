@@ -62,6 +62,7 @@ interface Props {
   file: File;
   showSnack: SnackBarElement['showSnackbar'];
   onBack: () => void;
+  onNewFile: (file: File) => void;
 }
 
 interface State {
@@ -391,6 +392,19 @@ export default class Compress extends Component<Props, State> {
   componentWillReceiveProps(nextProps: Props): void {
     if (nextProps.file !== this.props.file) {
       this.sourceFile = nextProps.file;
+      // Encoder/resize/quantize settings intentionally carry over to the new
+      // image, but a crop region is specific to the old image's pixels, so
+      // clear it rather than applying a stale (and possibly out-of-bounds)
+      // region to the new source.
+      if (this.state.preprocessorState.crop.enabled) {
+        this.setState((state) => ({
+          preprocessorState: cleanSet(
+            state.preprocessorState,
+            'crop',
+            defaultPreprocessorState.crop,
+          ),
+        }));
+      }
       this.queueUpdateImage({ immediate: true });
     }
   }
@@ -987,6 +1001,7 @@ export default class Compress extends Component<Props, State> {
           rightImgContain={rightImgContain}
           preprocessorState={preprocessorState}
           onPreprocessorChange={this.onPreprocessorChange}
+          onNewFile={this.props.onNewFile}
         />
         <button class={style.back} onClick={onBack}>
           <svg viewBox="0 0 61 53.3">
