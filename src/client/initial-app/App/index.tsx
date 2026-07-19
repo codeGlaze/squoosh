@@ -77,14 +77,30 @@ export default class App extends Component<Props, State> {
   private onFileDrop = ({ files }: FileDropEvent) => {
     if (!files || files.length === 0) return;
     const file = files[0];
+    const wasEditorOpen = this.state.isEditorOpen;
     this.openEditor();
     this.setState({ file });
+    // Dropping onto an already-open editor swaps the image in place.
+    if (wasEditorOpen) this.confirmSwap(file);
   };
 
   private onIntroPickFile = (file: File) => {
     this.openEditor();
     this.setState({ file });
   };
+
+  /**
+   * Swap the source image while staying in the editor, so the current
+   * encoder/processing settings carry over to the new file.
+   */
+  private onEditorPickFile = (file: File) => {
+    this.setState({ file });
+    this.confirmSwap(file);
+  };
+
+  private confirmSwap(file: File) {
+    this.showSnack(`Now editing “${file.name}”`, { timeout: 3000 });
+  }
 
   private showSnack = (
     message: string,
@@ -120,7 +136,12 @@ export default class App extends Component<Props, State> {
             <loading-spinner class={style.appLoader} />
           ) : isEditorOpen ? (
             Compress && (
-              <Compress file={file!} showSnack={this.showSnack} onBack={back} />
+              <Compress
+                file={file!}
+                showSnack={this.showSnack}
+                onBack={back}
+                onNewFile={this.onEditorPickFile}
+              />
             )
           ) : (
             <Intro onFile={this.onIntroPickFile} showSnack={this.showSnack} />
