@@ -25,7 +25,13 @@ interface Props {}
 
 interface State {
   awaitingShareTarget: boolean;
-  file?: File;
+  /**
+   * All files the user has loaded. The editor previews `files[selectedIndex]`;
+   * a future batch mode processes the whole array. Single-file flows are just
+   * `files.length === 1`.
+   */
+  files: File[];
+  selectedIndex: number;
   isEditorOpen: Boolean;
   Compress?: typeof import('client/lazy-app/Compress').default;
 }
@@ -36,7 +42,8 @@ export default class App extends Component<Props, State> {
       'share-target',
     ),
     isEditorOpen: false,
-    file: undefined,
+    files: [],
+    selectedIndex: 0,
     Compress: undefined,
   };
 
@@ -60,7 +67,11 @@ export default class App extends Component<Props, State> {
       // Remove the ?share-target from the URL
       history.replaceState('', '', '/');
       this.openEditor();
-      this.setState({ file, awaitingShareTarget: false });
+      this.setState({
+        files: file ? [file] : [],
+        selectedIndex: 0,
+        awaitingShareTarget: false,
+      });
     });
 
     // Since iOS 10, Apple tries to prevent disabling pinch-zoom. This is great in theory, but
@@ -76,17 +87,17 @@ export default class App extends Component<Props, State> {
 
   private onFileDrop = ({ files }: FileDropEvent) => {
     if (!files || files.length === 0) return;
-    const file = files[0];
+    const fileArray = Array.from(files);
     const wasEditorOpen = this.state.isEditorOpen;
     this.openEditor();
-    this.setState({ file });
+    this.setState({ files: fileArray, selectedIndex: 0 });
     // Dropping onto an already-open editor swaps the image in place.
-    if (wasEditorOpen) this.confirmSwap(file);
+    if (wasEditorOpen) this.confirmSwap(fileArray[0]);
   };
 
   private onIntroPickFile = (file: File) => {
     this.openEditor();
-    this.setState({ file });
+    this.setState({ files: [file], selectedIndex: 0 });
   };
 
   /**
@@ -94,7 +105,7 @@ export default class App extends Component<Props, State> {
    * encoder/processing settings carry over to the new file.
    */
   private onEditorPickFile = (file: File) => {
-    this.setState({ file });
+    this.setState({ files: [file], selectedIndex: 0 });
     this.confirmSwap(file);
   };
 
@@ -125,9 +136,16 @@ export default class App extends Component<Props, State> {
 
   render(
     {}: Props,
-    { file, isEditorOpen, Compress, awaitingShareTarget }: State,
+    {
+      files,
+      selectedIndex,
+      isEditorOpen,
+      Compress,
+      awaitingShareTarget,
+    }: State,
   ) {
     const showSpinner = awaitingShareTarget || (isEditorOpen && !Compress);
+    const selectedFile = files[selectedIndex];
 
     return (
       <div class={style.app}>
@@ -135,9 +153,10 @@ export default class App extends Component<Props, State> {
           {showSpinner ? (
             <loading-spinner class={style.appLoader} />
           ) : isEditorOpen ? (
-            Compress && (
+            Compress &&
+            selectedFile && (
               <Compress
-                file={file!}
+                file={selectedFile}
                 showSnack={this.showSnack}
                 onBack={back}
                 onNewFile={this.onEditorPickFile}
