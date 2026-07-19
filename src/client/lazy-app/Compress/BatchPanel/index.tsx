@@ -16,6 +16,8 @@ import type { FileResult } from '../batch-runner';
 interface Props {
   results: FileResult[];
   running: boolean;
+  suffix: string;
+  onSuffixChange(value: string): void;
   onCancel(): void;
   onRetry(): void;
   onDownloadZip(): void;
@@ -75,6 +77,8 @@ export default class BatchPanel extends Component<Props> {
   render({
     results,
     running,
+    suffix,
+    onSuffixChange,
     onCancel,
     onRetry,
     onDownloadZip,
@@ -224,6 +228,27 @@ export default class BatchPanel extends Component<Props> {
               </button>
             ) : (
               <Fragment>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    marginRight: 'auto',
+                    color: '#bbb',
+                  }}
+                  title="Added to each filename before the extension"
+                >
+                  Suffix:
+                  <input
+                    type="text"
+                    value={suffix}
+                    placeholder="-min"
+                    onInput={(e: Event) =>
+                      onSuffixChange((e.target as HTMLInputElement).value)
+                    }
+                    style={{ width: '96px' }}
+                  />
+                </label>
                 {failed > 0 && (
                   <button type="button" onClick={onRetry}>
                     Retry failed ({failed})

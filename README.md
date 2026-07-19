@@ -35,4 +35,13 @@ To develop for Squoosh:
 
 Squoosh is an open-source project that appreciates all community involvement. To contribute to the project, follow the [contribute guide](/CONTRIBUTING.md).
 
+# Credits
+
+The multi-file / bulk-compression approach was adapted from
+[nightgolfer/squiish](https://github.com/nightgolfer/squiish) (Apache-2.0),
+itself derived from
+[Khongchai/squoosh-multiple-export](https://github.com/Khongchai/squoosh-multiple-export)
+and [GoogleChromeLabs/squoosh](https://github.com/GoogleChromeLabs/squoosh).
+Zip export uses [client-zip](https://github.com/Touffy/client-zip) (MIT).
+
 [squoosh]: https://squoosh.app

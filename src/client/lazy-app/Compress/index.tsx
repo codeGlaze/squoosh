@@ -76,6 +76,8 @@ interface State {
   batchOpen: boolean;
   /** Live per-file status for the batch run. */
   batchResults: FileResult[];
+  /** Optional suffix added to batch output filenames (before the extension). */
+  batchSuffix: string;
 }
 
 interface MainJob {
@@ -194,6 +196,7 @@ export default class Compress extends Component<Props, State> {
     batchRunning: false,
     batchOpen: false,
     batchResults: [],
+    batchSuffix: '',
   };
 
   private batchRunner?: BatchRunner;
@@ -531,6 +534,7 @@ export default class Compress extends Component<Props, State> {
         }));
       });
     } finally {
+      runner.dispose();
       this.batchRunner = undefined;
       this.setState({ batchRunning: false });
     }
@@ -556,13 +560,17 @@ export default class Compress extends Component<Props, State> {
     await this.runBatch(failedFiles, settings, true);
   };
 
+  private onBatchSuffixChange = (batchSuffix: string) => {
+    this.setState({ batchSuffix });
+  };
+
   private onBatchDownloadZip = async () => {
     const outputs = this.state.batchResults
       .filter((r) => r.status === 'done' && r.result)
       .map((r) => r.result!);
     if (outputs.length === 0) return;
     try {
-      const zip = await zipFiles(outputs);
+      const zip = await zipFiles(outputs, this.state.batchSuffix);
       downloadBlob(zip, 'squoosh.zip');
     } catch (err) {
       this.props.showSnack(`Couldn't create zip: ${err}`);
@@ -913,6 +921,7 @@ export default class Compress extends Component<Props, State> {
       batchOpen,
       batchRunning,
       batchResults,
+      batchSuffix,
     }: State,
   ) {
     const [leftSide, rightSide] = sides;
@@ -1016,6 +1025,8 @@ export default class Compress extends Component<Props, State> {
           <BatchPanel
             results={batchResults}
             running={batchRunning}
+            suffix={batchSuffix}
+            onSuffixChange={this.onBatchSuffixChange}
             onCancel={this.onBatchCancel}
             onRetry={this.onBatchRetry}
             onDownloadZip={this.onBatchDownloadZip}

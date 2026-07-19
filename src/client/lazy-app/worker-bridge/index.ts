@@ -25,6 +25,15 @@ class WorkerBridge {
     this._workerApi = undefined;
   }
 
+  /**
+   * Immediately terminate the worker and cancel the idle timer. Safe to call
+   * when idle; a subsequent job will lazily start a fresh worker.
+   */
+  terminate() {
+    clearTimeout(this._workerTimeout);
+    this._terminateWorker();
+  }
+
   protected _startWorker() {
     this._worker = new Worker(workerURL);
     this._workerApi = wrap<ProcessorWorkerApi>(this._worker);

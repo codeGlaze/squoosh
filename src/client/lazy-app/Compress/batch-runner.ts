@@ -55,6 +55,21 @@ export function defaultConcurrency(): number {
   return Math.min(Math.max(cores - 1, 1), 3);
 }
 
+const MB = 1024 * 1024;
+
+/**
+ * Size-aware backoff. A file's decoded RGBA bitmap is far larger than its
+ * compressed bytes (a few MB of JPEG can decode to hundreds of MB), so with big
+ * inputs present we run fewer in parallel — down to 1 — to keep peak memory
+ * bounded. `file.size` is a coarse proxy for decoded size, but a safe one.
+ */
+function concurrencyForFiles(files: File[], cap: number): number {
+  const maxSize = files.reduce((max, f) => Math.max(max, f.size), 0);
+  if (maxSize > 6 * MB) return 1;
+  if (maxSize > 3 * MB) return Math.min(2, cap);
+  return cap;
+}
+
 function isAbortError(err: unknown): boolean {
   return err instanceof Error && err.name === 'AbortError';
 }
@@ -75,6 +90,14 @@ export class BatchRunner {
   /** Abort an in-progress run. In-flight images are marked 'cancelled'. */
   cancel(): void {
     this.abortController?.abort();
+  }
+
+  /**
+   * Terminate the worker pool, reclaiming WASM memory immediately rather than
+   * waiting for each worker's idle timeout. Call once the batch is finished.
+   */
+  dispose(): void {
+    for (const bridge of this.bridges) bridge.terminate();
   }
 
   /**
@@ -140,7 +163,12 @@ export class BatchRunner {
       }
     };
 
-    await Promise.all(this.bridges.map((bridge) => workerLoop(bridge)));
+    // Use fewer bridges when the inputs are large (unused bridges never spawn
+    // a worker). At least one always runs.
+    const active = Math.max(1, concurrencyForFiles(files, this.bridges.length));
+    await Promise.all(
+      this.bridges.slice(0, active).map((bridge) => workerLoop(bridge)),
+    );
 
     // Any file still 'processing' when we exit was interrupted by a cancel.
     if (signal.aborted) {
