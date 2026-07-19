@@ -67,8 +67,15 @@ ship without the other.
    output, quality slider still drives file size (q90≫q20), Options UI and
    client wrapper untouched, and the build now emits jSquash's wasm (via
    `importMetaAssets`) instead of the native one. The adapter pattern holds.
-2. **Roll out the mainstream codecs:** webp, avif, jxl, png/oxipng, qoi, then
-   resize. One thin wrapper each; meta/UI unchanged.
+2. **Roll out the mainstream codecs:** ✅ webp, avif, jxl, qoi done (encode +
+   decode on jSquash); remaining: png/oxipng, then resize. One thin wrapper
+   each; meta/UI unchanged. The E2E suite round-trips every codec after each
+   swap. Migrated native codecs are also removed from the service-worker
+   precache list (`src/sw/to-cache.ts`).
+   - **Offline follow-up:** jSquash's wasm isn't precached yet, so a
+     first-ever _offline_ use of a migrated codec won't have its wasm. Online
+     use is unaffected (wasm is fetched + browser-cached on first use). Add the
+     jSquash wasm assets to the precache before calling PWA-offline complete.
 3. **Shrink the build:** delete the `codecs/` sources for everything replaced;
    keep only `imagequant`, `wp2`, gif. Confirm build + all formats still work.
 4. **(Squooshii)** Package imagequant + wp2 → drop the last native build.

@@ -10,23 +10,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { WebPModule } from 'codecs/webp/dec/webp_dec';
-import { initEmscriptenModule, blobToArrayBuffer } from 'features/worker-utils';
-
-let emscriptenModule: Promise<WebPModule>;
+// Modernized to use @jsquash/webp. See MODERNIZATION.md.
+import webpDecode from '@jsquash/webp/decode';
 
 export default async function decode(blob: Blob): Promise<ImageData> {
-  if (!emscriptenModule) {
-    const decoder = await import('codecs/webp/dec/webp_dec');
-    emscriptenModule = initEmscriptenModule(decoder.default);
-  }
-
-  const [module, data] = await Promise.all([
-    emscriptenModule,
-    blobToArrayBuffer(blob),
-  ]);
-
-  const result = module.decode(data);
-  if (!result) throw new Error('Decoding error');
-  return result;
+  return webpDecode(await blob.arrayBuffer());
 }

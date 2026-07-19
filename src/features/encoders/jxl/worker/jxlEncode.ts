@@ -10,38 +10,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { JXLModule } from 'codecs/jxl/enc/jxl_enc';
-import type { EncodeOptions } from '../shared/meta';
+// Modernized to use @jsquash/jxl — Squoosh's own libjxl codec as a maintained
+// package. See MODERNIZATION.md.
+import jxlEncode from '@jsquash/jxl/encode';
+import { EncodeOptions } from '../shared/meta';
 
-import { initEmscriptenModule } from 'features/worker-utils';
-import { simd } from 'wasm-feature-detect';
-import checkThreadsSupport from 'worker-shared/supports-wasm-threads';
+type JSquashOptions = Parameters<typeof jxlEncode>[1];
 
-let emscriptenModule: Promise<JXLModule>;
-
-async function init() {
-  if (await checkThreadsSupport()) {
-    if (await simd()) {
-      const jxlEncoder = await import('codecs/jxl/enc/jxl_enc_mt_simd');
-      return initEmscriptenModule(jxlEncoder.default);
-    }
-    const jxlEncoder = await import('codecs/jxl/enc/jxl_enc_mt');
-    return initEmscriptenModule(jxlEncoder.default);
-  }
-  const jxlEncoder = await import('codecs/jxl/enc/jxl_enc');
-  return initEmscriptenModule(jxlEncoder.default);
-}
-
-export default async function encode(
+export default function encode(
   data: ImageData,
   options: EncodeOptions,
 ): Promise<ArrayBuffer> {
-  if (!emscriptenModule) emscriptenModule = init();
-
-  const module = await emscriptenModule;
-  const result = module.encode(data.data, data.width, data.height, options);
-
-  if (!result) throw new Error('Encoding error.');
-
-  return result.buffer;
+  return jxlEncode(data, options as unknown as JSquashOptions);
 }

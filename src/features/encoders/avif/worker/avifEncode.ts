@@ -10,32 +10,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { AVIFModule } from 'codecs/avif/enc/avif_enc';
-import type { EncodeOptions } from '../shared/meta';
-import { initEmscriptenModule } from 'features/worker-utils';
-import checkThreadsSupport from 'worker-shared/supports-wasm-threads';
+// Modernized to use @jsquash/avif — Squoosh's own libavif codec as a maintained
+// package. See MODERNIZATION.md.
+import avifEncode from '@jsquash/avif/encode';
+import { EncodeOptions } from '../shared/meta';
 
-let emscriptenModule: Promise<AVIFModule>;
-
-async function init() {
-  if (await checkThreadsSupport()) {
-    const avifEncoder = await import('codecs/avif/enc/avif_enc_mt');
-    return initEmscriptenModule<AVIFModule>(avifEncoder.default);
-  }
-  const avifEncoder = await import('codecs/avif/enc/avif_enc.js');
-  return initEmscriptenModule(avifEncoder.default);
-}
-
-export default async function encode(
+export default function encode(
   data: ImageData,
   options: EncodeOptions,
 ): Promise<ArrayBuffer> {
-  if (!emscriptenModule) emscriptenModule = init();
-
-  const module = await emscriptenModule;
-  const result = module.encode(data.data, data.width, data.height, options);
-
-  if (!result) throw new Error('Encoding error');
-
-  return result.buffer;
+  // avif's encode is overloaded (8- vs 16-bit); cast at the adapter boundary.
+  return avifEncode(data, options as any);
 }

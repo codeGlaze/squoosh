@@ -10,23 +10,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { AVIFModule } from 'codecs/avif/dec/avif_dec';
-import { initEmscriptenModule, blobToArrayBuffer } from 'features/worker-utils';
-
-let emscriptenModule: Promise<AVIFModule>;
+// Modernized to use @jsquash/avif. See MODERNIZATION.md.
+import avifDecode from '@jsquash/avif/decode';
 
 export default async function decode(blob: Blob): Promise<ImageData> {
-  if (!emscriptenModule) {
-    const decoder = await import('codecs/avif/dec/avif_dec');
-    emscriptenModule = initEmscriptenModule(decoder.default);
-  }
-
-  const [module, data] = await Promise.all([
-    emscriptenModule,
-    blobToArrayBuffer(blob),
-  ]);
-
-  const result = module.decode(data);
-  if (!result) throw new Error('Decoding error');
+  const result = await avifDecode(await blob.arrayBuffer());
+  if (!result) throw new Error("Couldn't decode AVIF");
   return result;
 }

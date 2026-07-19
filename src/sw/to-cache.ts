@@ -23,26 +23,14 @@ import * as blobAnim from 'entry-data:shared/prerendered-app/Intro/blob-anim';
 // Simple stuff everyone gets:
 import * as featuresWorker from 'entry-data:../features-worker';
 
-// Decoders (some are feature detected)
-import * as avifDec from 'entry-data:codecs/avif/dec/avif_dec';
-import * as webpDec from 'entry-data:codecs/webp/dec/webp_dec';
-
-// AVIF
-import * as avifEncMt from 'entry-data:codecs/avif/enc/avif_enc_mt';
-import * as avifEnc from 'entry-data:codecs/avif/enc/avif_enc';
-
-// JXL
-import * as jxlEncMtSimd from 'entry-data:codecs/jxl/enc/jxl_enc_mt_simd';
-import * as jxlEncMt from 'entry-data:codecs/jxl/enc/jxl_enc_mt';
-import * as jxlEnc from 'entry-data:codecs/jxl/enc/jxl_enc';
+// NOTE: avif, webp, jxl (and mozjpeg) are served by @jsquash packages now, so
+// their native codecs are no longer precached here. Offline precaching of the
+// jSquash wasm is a follow-up (see MODERNIZATION.md); the app still works
+// online, and these assets are cached by the browser on first use.
 
 // OXI
 import * as oxiMt from 'entry-data:codecs/oxipng/pkg-parallel/squoosh_oxipng';
 import * as oxi from 'entry-data:codecs/oxipng/pkg/squoosh_oxipng';
-
-// WebP
-import * as webpEncSimd from 'entry-data:codecs/webp/enc/webp_enc_simd';
-import * as webpEnc from 'entry-data:codecs/webp/enc/webp_enc';
 
 // WP2
 import * as wp2EncMtSimd from 'entry-data:codecs/wp2/enc/wp2_enc_mt_simd';
@@ -106,37 +94,11 @@ export const theRest = (async () => {
 
   addWithDeps(featuresWorker);
 
-  if (!supportsAvif) addWithDeps(avifDec);
-  if (!supportsWebP) addWithDeps(webpDec);
-
-  // AVIF
-  if (supportsThreads) {
-    addWithDeps(avifEncMt);
-  } else {
-    addWithDeps(avifEnc);
-  }
-
-  // JXL
-  if (supportsThreads && supportsSimd) {
-    addWithDeps(jxlEncMtSimd);
-  } else if (supportsThreads) {
-    addWithDeps(jxlEncMt);
-  } else {
-    addWithDeps(jxlEnc);
-  }
-
   // OXI
   if (supportsThreads) {
     addWithDeps(oxiMt);
   } else {
     addWithDeps(oxi);
-  }
-
-  // WebP
-  if (supportsSimd) {
-    addWithDeps(webpEncSimd);
-  } else {
-    addWithDeps(webpEnc);
   }
 
   // WP2

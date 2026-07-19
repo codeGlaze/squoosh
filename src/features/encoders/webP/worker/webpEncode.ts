@@ -10,33 +10,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { WebPModule } from 'codecs/webp/enc/webp_enc';
-import type { EncodeOptions } from '../shared/meta';
+// Modernized to use @jsquash/webp — Squoosh's own libwebp codec as a maintained
+// package. It picks the SIMD/threaded build internally and loads its wasm via
+// import.meta.url, which importMetaAssets emits. See MODERNIZATION.md.
+import webpEncode from '@jsquash/webp/encode';
+import { EncodeOptions } from '../shared/meta';
 
-import { initEmscriptenModule } from 'features/worker-utils';
-import { simd } from 'wasm-feature-detect';
+type JSquashOptions = Parameters<typeof webpEncode>[1];
 
-let emscriptenModule: Promise<WebPModule>;
-
-async function init() {
-  if (await simd()) {
-    const webpEncoder = await import('codecs/webp/enc/webp_enc_simd');
-    return initEmscriptenModule(webpEncoder.default);
-  }
-  const webpEncoder = await import('codecs/webp/enc/webp_enc');
-  return initEmscriptenModule(webpEncoder.default);
-}
-
-export default async function encode(
+export default function encode(
   data: ImageData,
   options: EncodeOptions,
 ): Promise<ArrayBuffer> {
-  if (!emscriptenModule) emscriptenModule = init();
-
-  const module = await emscriptenModule;
-  const result = module.encode(data.data, data.width, data.height, options);
-
-  if (!result) throw new Error('Encoding error.');
-
-  return result.buffer;
+  return webpEncode(data, options as unknown as JSquashOptions);
 }

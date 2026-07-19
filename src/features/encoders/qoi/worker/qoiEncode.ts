@@ -10,26 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import qoiEncoder, { QoiModule } from 'codecs/qoi/enc/qoi_enc';
-import type { EncodeOptions } from '../shared/meta';
-import { initEmscriptenModule } from 'features/worker-utils';
+// Modernized to use @jsquash/qoi — Squoosh's own QOI codec as a maintained
+// package. QOI is parameterless, so options are ignored. See MODERNIZATION.md.
+import qoiEncode from '@jsquash/qoi/encode';
+import { EncodeOptions } from '../shared/meta';
 
-let emscriptenModule: Promise<QoiModule>;
-
-async function init() {
-  return initEmscriptenModule(qoiEncoder);
-}
-
-export default async function encode(
+export default function encode(
   data: ImageData,
-  options: EncodeOptions,
+  _options: EncodeOptions,
 ): Promise<ArrayBuffer> {
-  if (!emscriptenModule) {
-    emscriptenModule = init();
-  }
-
-  const module = await emscriptenModule;
-  const resultView = module.encode(data.data, data.width, data.height, options);
-  // wasm can’t run on SharedArrayBuffers, so we hard-cast to ArrayBuffer.
-  return resultView.buffer as ArrayBuffer;
+  return qoiEncode(data);
 }
