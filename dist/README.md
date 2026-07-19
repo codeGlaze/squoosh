@@ -1,8 +1,10 @@
-# squooshii — prebuilt snapshot
+# squoosh (consolidated) — prebuilt snapshot
 
-This is a **compiled build** of the `squooshii` branch (all codecs on jSquash),
-committed so you can interact with it without a toolchain. It's a build
-artifact — regenerate with `npm run build && rm -rf dist && cp -r build dist`.
+This is a **compiled build** of the `claude/squoosh-consolidated` branch —
+crop + in-editor image swap + batch mode on top of the jSquash maintained
+codecs, with offline PWA support — committed so you can interact with it
+without a toolchain. It's a build artifact — regenerate with
+`npm run build && rm -rf dist && cp -r build dist` (keep this README).
 
 ## ⚠️ Do NOT double-click `index.html`
 
