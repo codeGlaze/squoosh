@@ -10,22 +10,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import mozjpeg_enc, { MozJPEGModule } from 'codecs/mozjpeg/enc/mozjpeg_enc';
+import jpegEncode from '@jsquash/jpeg/encode';
 import { EncodeOptions } from '../shared/meta';
-import { initEmscriptenModule } from 'features/worker-utils';
 
-let emscriptenModule: Promise<MozJPEGModule>;
+// jSquash's MozJPEG is the very codec Squoosh built, extracted into a
+// maintained package (see MODERNIZATION.md). It exposes the same
+// encode(ImageData, options) => Promise<ArrayBuffer> contract and loads its
+// wasm via `new URL(..., import.meta.url)`, which our importMetaAssets Rollup
+// plugin already emits — so this drops in where the local Emscripten build was.
+type JSquashOptions = Parameters<typeof jpegEncode>[1];
 
-export default async function encode(
+export default function encode(
   data: ImageData,
   options: EncodeOptions,
 ): Promise<ArrayBuffer> {
-  if (!emscriptenModule) {
-    emscriptenModule = initEmscriptenModule(mozjpeg_enc);
-  }
-
-  const module = await emscriptenModule;
-  const resultView = module.encode(data.data, data.width, data.height, options);
-  // wasm can’t run on SharedArrayBuffers, so we hard-cast to ArrayBuffer.
-  return resultView.buffer as ArrayBuffer;
+  // Our EncodeOptions and jSquash's are structurally identical (both come from
+  // Squoosh); bridge the nominally-distinct types at this adapter boundary.
+  return jpegEncode(data, options as unknown as JSquashOptions);
 }

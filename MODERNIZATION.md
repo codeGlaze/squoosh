@@ -62,9 +62,11 @@ ship without the other.
 
 ## Phased plan
 
-1. **Proof of concept (de-risk):** move one codec — MozJPEG — to
-   `@jsquash/jpeg` behind the existing worker wrapper. Verify output parity and
-   that the Options UI is untouched. This proves the adapter pattern end-to-end.
+1. **Proof of concept (de-risk):** ✅ **done** — MozJPEG moved to
+   `@jsquash/jpeg` by rewriting only its worker wrapper. Verified: valid JPEG
+   output, quality slider still drives file size (q90≫q20), Options UI and
+   client wrapper untouched, and the build now emits jSquash's wasm (via
+   `importMetaAssets`) instead of the native one. The adapter pattern holds.
 2. **Roll out the mainstream codecs:** webp, avif, jxl, png/oxipng, qoi, then
    resize. One thin wrapper each; meta/UI unchanged.
 3. **Shrink the build:** delete the `codecs/` sources for everything replaced;
