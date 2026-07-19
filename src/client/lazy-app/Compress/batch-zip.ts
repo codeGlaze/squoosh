@@ -12,6 +12,15 @@
  */
 import { downloadZip } from 'client-zip';
 
+/** Insert `suffix` before the extension, e.g. ("photo.jpg", "-min") → "photo-min.jpg". */
+export function suffixName(name: string, suffix: string): string {
+  const clean = suffix.replace(/[\\/:*?"<>|]/g, '');
+  if (!clean) return name;
+  const dot = name.lastIndexOf('.');
+  if (dot === -1) return name + clean;
+  return name.slice(0, dot) + clean + name.slice(dot);
+}
+
 /** Append `-N` before the extension to make `name` unique within `used`. */
 function dedupeName(name: string, used: Set<string>): string {
   if (!used.has(name)) return name;
@@ -29,10 +38,10 @@ function dedupeName(name: string, used: Set<string>): string {
  * compressed images, so a deflate pass would just waste CPU and memory.
  * Duplicate filenames are disambiguated with a numeric suffix.
  */
-export async function zipFiles(files: File[]): Promise<Blob> {
+export async function zipFiles(files: File[], suffix = ''): Promise<Blob> {
   const used = new Set<string>();
   const entries = files.map((file) => {
-    const name = dedupeName(file.name, used);
+    const name = dedupeName(suffixName(file.name, suffix), used);
     used.add(name);
     return { name, input: file, lastModified: new Date(file.lastModified) };
   });
