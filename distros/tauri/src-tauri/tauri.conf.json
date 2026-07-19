@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "app.squoosh.desktop",
   "build": {
-    "frontendDist": "../dist"
+    "frontendDist": "../../../dist"
   },
   "app": {
     "windows": [
@@ -12,7 +12,6 @@
     ],
     "security": {
       "csp": null,
-      "comment": "COOP/COEP make the webview cross-origin isolated so the multithreaded wasm codecs work. Requires Tauri >= 2.1 (the `headers` key).",
       "headers": {
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "require-corp"
@@ -21,6 +20,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all"
+    "targets": ["deb", "appimage"],
+    "icon": ["icons/icon.png"]
   }
 }
