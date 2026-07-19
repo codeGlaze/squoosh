@@ -29,7 +29,8 @@ import {
   compressImage,
   processSvg,
 } from './pipeline';
-import type { SourceImage } from './pipeline';
+import type { SourceImage, ProcessInput } from './pipeline';
+import { BatchRunner } from './batch-runner';
 
 export type OutputType = EncoderType | 'identity';
 
@@ -52,9 +53,11 @@ interface Side {
 
 interface Props {
   file: File;
+  /** All loaded files, for batch processing. Always includes `file`. */
+  files: File[];
   showSnack: SnackBarElement['showSnackbar'];
   onBack: () => void;
-  onNewFile: (file: File) => void;
+  onNewFiles: (files: File[]) => void;
 }
 
 interface State {
@@ -65,6 +68,8 @@ interface State {
   mobileView: boolean;
   preprocessorState: PreprocessorState;
   encodedPreprocessorState?: PreprocessorState;
+  /** True while a "compress all" batch run is in progress. */
+  batchRunning: boolean;
 }
 
 interface MainJob {
@@ -171,8 +176,10 @@ export default class Compress extends Component<Props, State> {
           },
     ],
     mobileView: this.widthQuery.matches,
+    batchRunning: false,
   };
 
+  private batchRunner?: BatchRunner;
   private readonly encodeCache = new ResultCache();
   // One for each side
   private readonly workerBridges = [new WorkerBridge(), new WorkerBridge()];
@@ -453,6 +460,58 @@ export default class Compress extends Component<Props, State> {
       this.updateImageTimeout = setTimeout(() => this.updateImage(), delay);
     }
   }
+
+  /**
+   * TEMPORARY (roadmap #2, phase 3): run the current settings across every
+   * loaded file via the BatchRunner and report a summary. The real per-file
+   * status UI and zip export land in later phases; for now this exercises the
+   * runner and logs progress.
+   */
+  private onCompressAll = async () => {
+    if (this.state.batchRunning) return;
+    const { files, showSnack } = this.props;
+
+    // Batch applies the settings of whichever side has an encoder selected.
+    const side = this.state.sides.find((s) => s.latestSettings.encoderState);
+    if (!side || !side.latestSettings.encoderState) {
+      showSnack('Pick an encoder on one side before compressing all');
+      return;
+    }
+
+    const settings: ProcessInput = {
+      preprocessorState: this.state.preprocessorState,
+      processorState: side.latestSettings.processorState,
+      encoderState: side.latestSettings.encoderState,
+    };
+
+    const runner = new BatchRunner();
+    this.batchRunner = runner;
+    this.setState({ batchRunning: true });
+
+    try {
+      const results = await runner.run(files, settings, (snapshot) => {
+        const done = snapshot.filter((r) => r.status === 'done').length;
+        const failed = snapshot.filter((r) => r.status === 'error').length;
+        console.log(
+          `[batch] ${done + failed}/${
+            snapshot.length
+          } settled (${failed} failed)`,
+        );
+      });
+
+      const done = results.filter((r) => r.status === 'done');
+      const failed = results.filter((r) => r.status === 'error');
+      console.log('[batch] results', results);
+      showSnack(
+        `Compressed ${done.length}/${results.length}` +
+          (failed.length ? `, ${failed.length} failed` : ''),
+        { timeout: 5000 },
+      );
+    } finally {
+      this.batchRunner = undefined;
+      this.setState({ batchRunning: false });
+    }
+  };
 
   private sourceFile: File;
   /** The in-progress job for decoding and preprocessing */
@@ -849,7 +908,10 @@ export default class Compress extends Component<Props, State> {
           rightImgContain={rightImgContain}
           preprocessorState={preprocessorState}
           onPreprocessorChange={this.onPreprocessorChange}
-          onNewFile={this.props.onNewFile}
+          onNewFiles={this.props.onNewFiles}
+          batchFileCount={this.props.files.length}
+          batchRunning={this.state.batchRunning}
+          onCompressAll={this.onCompressAll}
         />
         <button class={style.back} onClick={onBack}>
           <svg viewBox="0 0 61 53.3">

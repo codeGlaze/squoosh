@@ -37,7 +37,11 @@ interface Props {
   leftImgContain: boolean;
   rightImgContain: boolean;
   onPreprocessorChange: (newState: PreprocessorState) => void;
-  onNewFile: (file: File) => void;
+  onNewFiles: (files: File[]) => void;
+  /** Number of loaded files (for the batch button). */
+  batchFileCount: number;
+  batchRunning: boolean;
+  onCompressAll: () => void;
 }
 
 interface State {
@@ -201,10 +205,10 @@ export default class Output extends Component<Props, State> {
 
   private onFileChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    const file = input.files && input.files[0];
+    const files = input.files ? Array.from(input.files) : [];
     // Reset so picking the same filename again still fires a change event.
     input.value = '';
-    if (file) this.props.onNewFile(file);
+    if (files.length) this.props.onNewFiles(files);
   };
 
   private onCropClick = () => {
@@ -326,6 +330,9 @@ export default class Output extends Component<Props, State> {
       rightImgContain,
       source,
       preprocessorState,
+      batchFileCount,
+      batchRunning,
+      onCompressAll,
     }: Props,
     { scale, editingScale, altBackground, aliasing, cropMode }: State,
   ) {
@@ -399,17 +406,32 @@ export default class Output extends Component<Props, State> {
             <button
               class={style.singleButton}
               onClick={this.onOpenClick}
-              title="Open a different image"
+              title="Open image(s)"
             >
               <OpenImageIcon />
             </button>
             <input
               style={{ display: 'none' }}
               type="file"
+              multiple
               ref={linkRef(this, 'fileInput')}
               onChange={this.onFileChange}
             />
           </div>
+          {batchFileCount > 1 && (
+            <div class={style.buttonGroup}>
+              <button
+                class={style.singleButton}
+                onClick={onCompressAll}
+                disabled={batchRunning}
+                title="Compress every loaded image with the current settings"
+              >
+                {batchRunning
+                  ? 'Compressing…'
+                  : `Compress all (${batchFileCount})`}
+              </button>
+            </div>
+          )}
           <div class={style.buttonGroup}>
             <button class={style.firstButton} onClick={this.zoomOut}>
               <RemoveIcon />
