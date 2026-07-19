@@ -11,7 +11,8 @@
     "serve": "serve --listen=$DEV_PORT --config ../../../serve.json .tmp/build/static",
     "prepare": "husky install",
     "test": "playwright test",
-    "test:headed": "playwright test --headed"
+    "test:headed": "playwright test --headed",
+    "preview": "serve --config serve.json dist"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
