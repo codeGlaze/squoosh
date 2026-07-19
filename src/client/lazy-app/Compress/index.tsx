@@ -30,7 +30,9 @@ import {
   processSvg,
 } from './pipeline';
 import type { SourceImage, ProcessInput } from './pipeline';
-import { BatchRunner } from './batch-runner';
+import { BatchRunner, FileResult } from './batch-runner';
+import { zipFiles, downloadBlob } from './batch-zip';
+import BatchPanel from './BatchPanel';
 
 export type OutputType = EncoderType | 'identity';
 
@@ -70,6 +72,10 @@ interface State {
   encodedPreprocessorState?: PreprocessorState;
   /** True while a "compress all" batch run is in progress. */
   batchRunning: boolean;
+  /** Whether the batch panel is open. */
+  batchOpen: boolean;
+  /** Live per-file status for the batch run. */
+  batchResults: FileResult[];
 }
 
 interface MainJob {
@@ -85,6 +91,15 @@ interface SideJob {
 interface LoadingFileInfo {
   loading: boolean;
   filename?: string;
+}
+
+/** Overlay `updates` onto `base`, matching entries by their File identity. */
+function mergeBatchResults(
+  base: FileResult[],
+  updates: FileResult[],
+): FileResult[] {
+  const byFile = new Map(updates.map((u) => [u.file, u]));
+  return base.map((r) => byFile.get(r.file) || r);
 }
 
 function stateForNewSourceData(state: State): State {
@@ -177,6 +192,8 @@ export default class Compress extends Component<Props, State> {
     ],
     mobileView: this.widthQuery.matches,
     batchRunning: false,
+    batchOpen: false,
+    batchResults: [],
   };
 
   private batchRunner?: BatchRunner;
@@ -461,55 +478,94 @@ export default class Compress extends Component<Props, State> {
     }
   }
 
-  /**
-   * TEMPORARY (roadmap #2, phase 3): run the current settings across every
-   * loaded file via the BatchRunner and report a summary. The real per-file
-   * status UI and zip export land in later phases; for now this exercises the
-   * runner and logs progress.
-   */
-  private onCompressAll = async () => {
-    if (this.state.batchRunning) return;
-    const { files, showSnack } = this.props;
-
-    // Batch applies the settings of whichever side has an encoder selected.
+  /** Build the settings the batch applies: the side that has an encoder. */
+  private batchSettings(): ProcessInput | null {
     const side = this.state.sides.find((s) => s.latestSettings.encoderState);
-    if (!side || !side.latestSettings.encoderState) {
-      showSnack('Pick an encoder on one side before compressing all');
-      return;
-    }
-
-    const settings: ProcessInput = {
+    if (!side || !side.latestSettings.encoderState) return null;
+    return {
       preprocessorState: this.state.preprocessorState,
       processorState: side.latestSettings.processorState,
       encoderState: side.latestSettings.encoderState,
     };
+  }
 
+  /** Open the batch panel and run the current settings across every file. */
+  private onCompressAll = async () => {
+    if (this.state.batchRunning) return;
+    const settings = this.batchSettings();
+    if (!settings) {
+      this.props.showSnack(
+        'Pick an encoder on one side before compressing all',
+      );
+      return;
+    }
+    this.setState({ batchOpen: true });
+    await this.runBatch(this.props.files, settings, false);
+  };
+
+  /**
+   * Run `files` through the BatchRunner, streaming per-file status into state.
+   * When `merge` is true the results are merged into the existing list by file
+   * identity (used by "retry failed"); otherwise they replace it.
+   */
+  private async runBatch(
+    files: File[],
+    settings: ProcessInput,
+    merge: boolean,
+  ): Promise<void> {
     const runner = new BatchRunner();
     this.batchRunner = runner;
-    this.setState({ batchRunning: true });
+    this.setState((state) => ({
+      batchRunning: true,
+      batchResults: merge
+        ? state.batchResults
+        : files.map((file) => ({ file, status: 'queued' as const })),
+    }));
 
     try {
-      const results = await runner.run(files, settings, (snapshot) => {
-        const done = snapshot.filter((r) => r.status === 'done').length;
-        const failed = snapshot.filter((r) => r.status === 'error').length;
-        console.log(
-          `[batch] ${done + failed}/${
-            snapshot.length
-          } settled (${failed} failed)`,
-        );
+      await runner.run(files, settings, (snapshot) => {
+        this.setState((state) => ({
+          batchResults: merge
+            ? mergeBatchResults(state.batchResults, snapshot)
+            : snapshot,
+        }));
       });
-
-      const done = results.filter((r) => r.status === 'done');
-      const failed = results.filter((r) => r.status === 'error');
-      console.log('[batch] results', results);
-      showSnack(
-        `Compressed ${done.length}/${results.length}` +
-          (failed.length ? `, ${failed.length} failed` : ''),
-        { timeout: 5000 },
-      );
     } finally {
       this.batchRunner = undefined;
       this.setState({ batchRunning: false });
+    }
+  }
+
+  private onBatchCancel = () => {
+    this.batchRunner?.cancel();
+  };
+
+  private onBatchClose = () => {
+    if (this.state.batchRunning) this.batchRunner?.cancel();
+    this.setState({ batchOpen: false });
+  };
+
+  private onBatchRetry = async () => {
+    if (this.state.batchRunning) return;
+    const settings = this.batchSettings();
+    if (!settings) return;
+    const failedFiles = this.state.batchResults
+      .filter((r) => r.status === 'error' || r.status === 'cancelled')
+      .map((r) => r.file);
+    if (failedFiles.length === 0) return;
+    await this.runBatch(failedFiles, settings, true);
+  };
+
+  private onBatchDownloadZip = async () => {
+    const outputs = this.state.batchResults
+      .filter((r) => r.status === 'done' && r.result)
+      .map((r) => r.result!);
+    if (outputs.length === 0) return;
+    try {
+      const zip = await zipFiles(outputs);
+      downloadBlob(zip, 'squoosh.zip');
+    } catch (err) {
+      this.props.showSnack(`Couldn't create zip: ${err}`);
     }
   };
 
@@ -848,7 +904,16 @@ export default class Compress extends Component<Props, State> {
 
   render(
     { onBack }: Props,
-    { loading, sides, source, mobileView, preprocessorState }: State,
+    {
+      loading,
+      sides,
+      source,
+      mobileView,
+      preprocessorState,
+      batchOpen,
+      batchRunning,
+      batchResults,
+    }: State,
   ) {
     const [leftSide, rightSide] = sides;
     const [leftImageData, rightImageData] = sides.map((i) => i.data);
@@ -946,6 +1011,16 @@ export default class Compress extends Component<Props, State> {
               {results[1]}
             </div>,
           ]
+        )}
+        {batchOpen && (
+          <BatchPanel
+            results={batchResults}
+            running={batchRunning}
+            onCancel={this.onBatchCancel}
+            onRetry={this.onBatchRetry}
+            onDownloadZip={this.onBatchDownloadZip}
+            onClose={this.onBatchClose}
+          />
         )}
       </div>
     );
