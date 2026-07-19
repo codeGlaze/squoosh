@@ -101,12 +101,17 @@ export default class App extends Component<Props, State> {
   };
 
   /**
-   * Swap the source image while staying in the editor, so the current
-   * encoder/processing settings carry over to the new file.
+   * Replace the loaded files while staying in the editor, so the current
+   * encoder/processing settings carry over to the new file(s).
    */
-  private onEditorPickFile = (file: File) => {
-    this.setState({ files: [file], selectedIndex: 0 });
-    this.confirmSwap(file);
+  private onEditorPickFiles = (files: File[]) => {
+    if (files.length === 0) return;
+    this.setState({ files, selectedIndex: 0 });
+    if (files.length === 1) {
+      this.confirmSwap(files[0]);
+    } else {
+      this.showSnack(`Loaded ${files.length} images`, { timeout: 3000 });
+    }
   };
 
   private confirmSwap(file: File) {
@@ -157,9 +162,10 @@ export default class App extends Component<Props, State> {
             selectedFile && (
               <Compress
                 file={selectedFile}
+                files={files}
                 showSnack={this.showSnack}
                 onBack={back}
-                onNewFile={this.onEditorPickFile}
+                onNewFiles={this.onEditorPickFiles}
               />
             )
           ) : (
