@@ -1,0 +1,20 @@
+{
+  "rustc": 5391851738765093524,
+  "features": "[\"serde\"]",
+  "declared_features": "[\"serde\"]",
+  "target": 12689469971551349565,
+  "profile": 1369601567987815722,
+  "path": 902058126199922191,
+  "deps": [[6557439603276904804, "serde", false, 4653022706276111339]],
+  "local": [
+    {
+      "CheckDepInfo": {
+        "dep_info": "release/.fingerprint/toml_datetime-1eb22bfe3a68794c/dep-lib-toml_datetime",
+        "checksum": false
+      }
+    }
+  ],
+  "rustflags": [],
+  "config": 8247474407144887393,
+  "compile_kind": 0
+}

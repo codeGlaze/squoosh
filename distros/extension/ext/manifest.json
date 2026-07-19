@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Squoosh (offline)",
+  "version": "1.0.0",
+  "description": "Compress images locally in your browser — private, offline, multithreaded.",
+  "action": { "default_title": "Open Squoosh" },
+  "background": { "service_worker": "ext-background.js" },
+  "cross_origin_embedder_policy": { "value": "require-corp" },
+  "cross_origin_opener_policy": { "value": "same-origin" },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}

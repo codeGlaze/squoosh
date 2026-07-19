@@ -1,0 +1,20 @@
+{
+  "rustc": 5391851738765093524,
+  "features": "[\"default\", \"std\"]",
+  "declared_features": "[\"default\", \"serde\", \"serde_json\", \"serde_no_std\", \"serde_std\", \"std\"]",
+  "target": 4119152769974956727,
+  "profile": 18063220464823374310,
+  "path": 815808805827048559,
+  "deps": [],
+  "local": [
+    {
+      "CheckDepInfo": {
+        "dep_info": "release/.fingerprint/siphasher-d34cb418fe8a474d/dep-lib-siphasher",
+        "checksum": false
+      }
+    }
+  ],
+  "rustflags": [],
+  "config": 8247474407144887393,
+  "compile_kind": 0
+}

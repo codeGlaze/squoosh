@@ -1,0 +1,20 @@
+{
+  "rustc": 5391851738765093524,
+  "features": "[\"default\"]",
+  "declared_features": "[\"arbitrary\", \"async-tokio\", \"default\", \"document-features\", \"encoding\", \"encoding_rs\", \"escape-html\", \"overlapped-lists\", \"serde\", \"serde-types\", \"serialize\", \"tokio\"]",
+  "target": 15964992249495196456,
+  "profile": 18063220464823374310,
+  "path": 9113983310224273276,
+  "deps": [[12613788554453945248, "memchr", false, 17921110550588997881]],
+  "local": [
+    {
+      "CheckDepInfo": {
+        "dep_info": "release/.fingerprint/quick-xml-d451ed9553e1ae0a/dep-lib-quick_xml",
+        "checksum": false
+      }
+    }
+  ],
+  "rustflags": [],
+  "config": 8247474407144887393,
+  "compile_kind": 0
+}

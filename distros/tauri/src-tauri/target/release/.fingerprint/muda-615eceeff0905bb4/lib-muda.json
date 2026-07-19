@@ -1,0 +1,28 @@
+{
+  "rustc": 5391851738765093524,
+  "features": "[\"common-controls-v6\", \"gtk\", \"serde\"]",
+  "declared_features": "[\"common-controls-v6\", \"default\", \"gtk\", \"libxdo\", \"serde\"]",
+  "target": 5140358902516826434,
+  "profile": 18063220464823374310,
+  "path": 13300713422757487876,
+  "deps": [
+    [3946744954652239313, "crossbeam_channel", false, 2775594230526531939],
+    [4052690969609167974, "gtk", false, 1132222351787501047],
+    [5855319743879205494, "once_cell", false, 3103297273015332792],
+    [6557439603276904804, "serde", false, 5252067498291304217],
+    [7606335748176206944, "dpi", false, 17463260521416986718],
+    [11742730876020405241, "thiserror", false, 15617745292854367566],
+    [14532484442929614732, "keyboard_types", false, 12013816273353630546]
+  ],
+  "local": [
+    {
+      "CheckDepInfo": {
+        "dep_info": "release/.fingerprint/muda-615eceeff0905bb4/dep-lib-muda",
+        "checksum": false
+      }
+    }
+  ],
+  "rustflags": [],
+  "config": 8247474407144887393,
+  "compile_kind": 0
+}

@@ -37,6 +37,17 @@ export function shouldCacheDynamically(url: string) {
   return url.startsWith('/c/demo-');
 }
 
+/**
+ * Content-hashed chunks and codec wasm live under `/c/` (everything except the
+ * large demo images, which are handled dynamically above). They're immutable,
+ * so we cache them into the versioned cache on first fetch — this is what makes
+ * the jSquash codecs available offline after they've been used once. The whole
+ * versioned cache is discarded on the next release, so nothing goes stale.
+ */
+export function shouldRuntimeCache(url: string) {
+  return url.startsWith('/c/') && !shouldCacheDynamically(url);
+}
+
 let initialJs = new Set([
   compress.main,
   ...compress.deps,

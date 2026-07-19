@@ -1,0 +1,23 @@
+{
+  "rustc": 5391851738765093524,
+  "features": "[]",
+  "declared_features": "[]",
+  "target": 4853353551047732211,
+  "profile": 1369601567987815722,
+  "path": 4095854554179558132,
+  "deps": [
+    [8949245912927223590, "quote", false, 8572935192790667412],
+    [10190449710562616856, "syn", false, 15408402368065200373]
+  ],
+  "local": [
+    {
+      "CheckDepInfo": {
+        "dep_info": "release/.fingerprint/cssparser-macros-6f7ae3b867a1f6d6/dep-lib-cssparser_macros",
+        "checksum": false
+      }
+    }
+  ],
+  "rustflags": [],
+  "config": 8247474407144887393,
+  "compile_kind": 0
+}

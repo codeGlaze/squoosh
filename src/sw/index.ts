@@ -7,7 +7,7 @@ import {
   serveShareTarget,
 } from './util';
 import { get } from 'idb-keyval';
-import { shouldCacheDynamically } from './to-cache';
+import { shouldCacheDynamically, shouldRuntimeCache } from './to-cache';
 
 // Give TypeScript the correct global.
 declare var self: ServiceWorkerGlobalScope;
@@ -74,6 +74,16 @@ self.addEventListener('fetch', (event) => {
   if (shouldCacheDynamically(url.pathname)) {
     cacheOrNetworkAndCache(event, dynamicCache);
     cleanupCache(event, dynamicCache, ASSETS);
+    return;
+  }
+
+  // Immutable, content-hashed chunks and codec wasm (jSquash) live under `/c/`.
+  // They aren't in the install-time precache, so cache them into the versioned
+  // cache on first fetch — this is what makes the jSquash codecs work offline
+  // after they've been used once. The versioned cache is dropped on release, so
+  // these entries never go stale.
+  if (shouldRuntimeCache(url.pathname)) {
+    cacheOrNetworkAndCache(event, versionedCache);
     return;
   }
 

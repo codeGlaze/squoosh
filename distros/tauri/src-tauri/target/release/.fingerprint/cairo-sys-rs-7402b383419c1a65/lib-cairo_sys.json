@@ -1,0 +1,24 @@
+{
+  "rustc": 5391851738765093524,
+  "features": "[\"glib\", \"use_glib\"]",
+  "declared_features": "[\"freetype\", \"glib\", \"pdf\", \"png\", \"ps\", \"script\", \"svg\", \"use_glib\", \"v1_16\", \"v1_18\", \"win32-surface\", \"winapi\", \"x11\", \"xcb\", \"xlib\"]",
+  "target": 12604004911878344227,
+  "profile": 18063220464823374310,
+  "path": 13365569039305138988,
+  "deps": [
+    [6885242093860886281, "build_script_build", false, 13588026716307854318],
+    [7098700569944897890, "libc", false, 5299945140775440201],
+    [13626264195287554611, "glib", false, 10975043631851605714]
+  ],
+  "local": [
+    {
+      "CheckDepInfo": {
+        "dep_info": "release/.fingerprint/cairo-sys-rs-7402b383419c1a65/dep-lib-cairo_sys",
+        "checksum": false
+      }
+    }
+  ],
+  "rustflags": [],
+  "config": 8247474407144887393,
+  "compile_kind": 0
+}
