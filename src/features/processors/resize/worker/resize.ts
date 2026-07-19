@@ -1,140 +1,28 @@
+/**
+ * Copyright 2020 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// Modernized to use @jsquash/resize — Squoosh's own rust resize + hqx as a
+// maintained package. It's a superset of the old worker: it handles the
+// contain fit method, premultiply/linear-RGB, and hqx internally, so the
+// hand-rolled cropping/contain logic here is no longer needed. Browser and
+// vector resize methods are still handled client-side. See MODERNIZATION.md.
+import jsquashResize from '@jsquash/resize';
 import type { WorkerResizeOptions } from '../shared/meta';
-import { getContainOffsets } from '../shared/util';
-import initResizeWasm, { resize as wasmResize } from 'codecs/resize/pkg';
-import initHqxWasm, { resize as wasmHqx } from 'codecs/hqx/pkg';
 
-interface HqxResizeOptions extends WorkerResizeOptions {
-  method: 'hqx';
-}
+type JSquashOptions = Parameters<typeof jsquashResize>[1];
 
-function optsIsHqxOpts(opts: WorkerResizeOptions): opts is HqxResizeOptions {
-  return opts.method === 'hqx';
-}
-
-function crop(
-  data: ImageData,
-  sx: number,
-  sy: number,
-  sw: number,
-  sh: number,
-): ImageData {
-  const inputPixels = new Uint32Array(data.data.buffer);
-
-  // Copy within the same buffer for speed and memory efficiency.
-  for (let y = 0; y < sh; y += 1) {
-    const start = (y + sy) * data.width + sx;
-    inputPixels.copyWithin(y * sw, start, start + sw);
-  }
-
-  return new ImageData(
-    new Uint8ClampedArray(inputPixels.buffer.slice(0, sw * sh * 4)),
-    sw,
-    sh,
-  );
-}
-
-interface ClampOpts {
-  min?: number;
-  max?: number;
-}
-
-function clamp(
-  num: number,
-  { min = Number.MIN_VALUE, max = Number.MAX_VALUE }: ClampOpts,
-): number {
-  return Math.min(Math.max(num, min), max);
-}
-
-/** Resize methods by index */
-const resizeMethods: WorkerResizeOptions['method'][] = [
-  'triangle',
-  'catrom',
-  'mitchell',
-  'lanczos3',
-];
-
-let resizeWasmReady: Promise<unknown>;
-let hqxWasmReady: Promise<unknown>;
-
-async function hqx(
-  input: ImageData,
-  opts: HqxResizeOptions,
-): Promise<ImageData> {
-  if (!hqxWasmReady) {
-    hqxWasmReady = initHqxWasm();
-  }
-
-  await hqxWasmReady;
-
-  const widthRatio = opts.width / input.width;
-  const heightRatio = opts.height / input.height;
-  const ratio = Math.max(widthRatio, heightRatio);
-  const factor = clamp(Math.ceil(ratio), { min: 1, max: 4 }) as 1 | 2 | 3 | 4;
-
-  if (factor === 1) return input;
-
-  const result = wasmHqx(
-    new Uint32Array(input.data.buffer),
-    input.width,
-    input.height,
-    factor,
-  );
-
-  return new ImageData(
-    new Uint8ClampedArray(result.buffer),
-    input.width * factor,
-    input.height * factor,
-  );
-}
-
-export default async function resize(
+export default function resize(
   data: ImageData,
   opts: WorkerResizeOptions,
 ): Promise<ImageData> {
-  let input = data;
-
-  if (!resizeWasmReady) {
-    resizeWasmReady = initResizeWasm();
-  }
-
-  if (optsIsHqxOpts(opts)) {
-    input = await hqx(input, opts);
-    // Regular resize to make up the difference
-    opts = { ...opts, method: 'catrom' };
-  }
-
-  await resizeWasmReady;
-
-  if (opts.fitMethod === 'contain') {
-    const { sx, sy, sw, sh } = getContainOffsets(
-      data.width,
-      data.height,
-      opts.width,
-      opts.height,
-    );
-    input = crop(
-      input,
-      Math.round(sx),
-      Math.round(sy),
-      Math.round(sw),
-      Math.round(sh),
-    );
-  }
-
-  const result = wasmResize(
-    new Uint8Array(input.data.buffer),
-    input.width,
-    input.height,
-    opts.width,
-    opts.height,
-    resizeMethods.indexOf(opts.method),
-    opts.premultiply,
-    opts.linearRGB,
-  );
-
-  return new ImageData(
-    new Uint8ClampedArray(result.buffer),
-    opts.width,
-    opts.height,
-  );
+  return jsquashResize(data, opts as unknown as JSquashOptions);
 }

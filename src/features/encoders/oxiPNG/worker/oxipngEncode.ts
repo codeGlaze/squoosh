@@ -10,46 +10,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Modernized to use @jsquash/oxipng — Squoosh's own OxiPNG as a maintained
+// package. Its optimise() takes raw ImageData (encoding + optimising in one
+// step, like the native module) and the same { level, interlace } options, and
+// picks the threaded/single build internally. See MODERNIZATION.md.
+import optimise from '@jsquash/oxipng/optimise';
 import { EncodeOptions } from '../shared/meta';
-import checkThreadsSupport from 'worker-shared/supports-wasm-threads';
 
-async function initMT() {
-  const {
-    default: init,
-    initThreadPool,
-    optimise,
-  } = await import('codecs/oxipng/pkg-parallel/squoosh_oxipng');
-  await init();
-  await initThreadPool(navigator.hardwareConcurrency);
-  return optimise;
-}
+type JSquashOptions = Parameters<typeof optimise>[1];
 
-async function initST() {
-  const { default: init, optimise } = await import(
-    'codecs/oxipng/pkg/squoosh_oxipng'
-  );
-  await init();
-  return optimise;
-}
-
-let wasmReady: ReturnType<typeof initMT | typeof initST>;
-
-export default async function encode(
+export default function encode(
   data: ImageData,
   options: EncodeOptions,
 ): Promise<ArrayBuffer> {
-  if (!wasmReady) {
-    wasmReady = checkThreadsSupport().then((hasThreads: boolean) =>
-      hasThreads ? initMT() : initST(),
-    );
-  }
-
-  const optimise = await wasmReady;
-  return optimise(
-    data.data,
-    data.width,
-    data.height,
-    options.level,
-    options.interlace,
-  ).buffer;
+  return optimise(data, options as unknown as JSquashOptions);
 }

@@ -67,11 +67,12 @@ ship without the other.
    output, quality slider still drives file size (q90≫q20), Options UI and
    client wrapper untouched, and the build now emits jSquash's wasm (via
    `importMetaAssets`) instead of the native one. The adapter pattern holds.
-2. **Roll out the mainstream codecs:** ✅ webp, avif, jxl, qoi done (encode +
-   decode on jSquash); remaining: png/oxipng, then resize. One thin wrapper
-   each; meta/UI unchanged. The E2E suite round-trips every codec after each
-   swap. Migrated native codecs are also removed from the service-worker
-   precache list (`src/sw/to-cache.ts`).
+2. **Roll out the mainstream codecs:** ✅ **done** — mozJPEG, webP, avif, jxl,
+   qoi, oxiPNG (encoders), the webp/avif/jxl/qoi decoders, and resize all run on
+   jSquash now. One thin wrapper each; meta/UI/worker method names unchanged.
+   The E2E suite round-trips every codec after each swap. Migrated native codecs
+   were also removed from the service-worker precache list (`src/sw/to-cache.ts`).
+   Retained native as planned: **WebP2, imagequant (quantize), GIF, rotate**.
    - **Offline follow-up:** jSquash's wasm isn't precached yet, so a
      first-ever _offline_ use of a migrated codec won't have its wasm. Online
      use is unaffected (wasm is fetched + browser-cached on first use). Add the

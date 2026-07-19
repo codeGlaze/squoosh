@@ -28,10 +28,6 @@ import * as featuresWorker from 'entry-data:../features-worker';
 // jSquash wasm is a follow-up (see MODERNIZATION.md); the app still works
 // online, and these assets are cached by the browser on first use.
 
-// OXI
-import * as oxiMt from 'entry-data:codecs/oxipng/pkg-parallel/squoosh_oxipng';
-import * as oxi from 'entry-data:codecs/oxipng/pkg/squoosh_oxipng';
-
 // WP2
 import * as wp2EncMtSimd from 'entry-data:codecs/wp2/enc/wp2_enc_mt_simd';
 import * as wp2EncMt from 'entry-data:codecs/wp2/enc/wp2_enc_mt';
@@ -93,13 +89,6 @@ export const theRest = (async () => {
   }
 
   addWithDeps(featuresWorker);
-
-  // OXI
-  if (supportsThreads) {
-    addWithDeps(oxiMt);
-  } else {
-    addWithDeps(oxi);
-  }
 
   // WP2
   if (supportsThreads && supportsSimd) {
