@@ -1,0 +1,20 @@
+Squoosh - offline image compressor
+==================================
+
+TO RUN:
+  1. Double-click the Squoosh app (Squoosh.exe on Windows).
+     - Windows may warn "Windows protected your PC" because the file is
+       unsigned. Click "More info" -> "Run anyway". It's safe: it only starts
+       a tiny web server on your OWN computer (localhost) - nothing is uploaded.
+  2. A browser tab opens at http://localhost:8787
+  3. Drag an image in, pick a format/quality, download. Done.
+
+INSTALL IT AS A REAL APP (optional, recommended):
+  - In Chrome / Edge / Brave, click the install icon in the address bar
+    (or menu -> "Install Squoosh").
+  - It becomes an app with its own icon that works fully offline.
+  - After installing, you can close the launcher window - you won't need it
+    again.
+
+Everything runs locally. No image ever leaves your machine.
+To stop the launcher: close its window (or press Ctrl+C).

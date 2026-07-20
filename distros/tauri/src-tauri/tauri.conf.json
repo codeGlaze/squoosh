@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Squoosh",
+  "version": "1.0.0",
+  "identifier": "app.squoosh.desktop",
+  "build": {
+    "frontendDist": "../../../dist"
+  },
+  "app": {
+    "windows": [
+      { "title": "Squoosh", "width": 1100, "height": 820, "resizable": true }
+    ],
+    "security": {
+      "csp": null,
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "appimage"],
+    "icon": ["icons/icon.png"]
+  }
+}
