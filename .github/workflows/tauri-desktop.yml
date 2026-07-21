@@ -1,0 +1,74 @@
+name: Build Tauri desktop apps
+
+# Builds the Squoosh desktop app (distros/tauri) natively on each OS and
+# uploads the installers as workflow artifacts. Runs on demand, or when the
+# Tauri project or the committed frontend build changes.
+#
+# The Tauri config points frontendDist at the committed dist/ and has no
+# beforeBuildCommand, so CI does NOT rebuild the web app — it just compiles the
+# Rust shell and bundles the already-built dist/.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/squoosh-consolidated]
+    paths:
+      - 'distros/tauri/**'
+      - 'dist/**'
+      - '.github/workflows/tauri-desktop.yml'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            bundles: appimage,deb
+          - os: macos-14
+            bundles: app,dmg
+          - os: windows-latest
+            bundles: nsis,msi
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: distros/tauri/src-tauri
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libsoup-3.0-dev \
+            librsvg2-dev \
+            libappindicator3-dev \
+            patchelf
+
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: distros/tauri
+          args: --bundles ${{ matrix.bundles }}
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: squoosh-desktop-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            distros/tauri/src-tauri/target/release/bundle/**/*.AppImage
+            distros/tauri/src-tauri/target/release/bundle/**/*.deb
+            distros/tauri/src-tauri/target/release/bundle/**/*.dmg
+            distros/tauri/src-tauri/target/release/bundle/**/*.app
+            distros/tauri/src-tauri/target/release/bundle/**/*.exe
+            distros/tauri/src-tauri/target/release/bundle/**/*.msi
